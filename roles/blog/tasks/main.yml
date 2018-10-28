@@ -1,0 +1,64 @@
+# Install RPM package(s)
+- name: Ensure RPM(s) are installed and up-to-date
+  yum: 
+    name: "{{ packages }}"
+    state: latest
+  vars:
+    packages: "{{ rpms }}"
+  notify:
+  - restart httpd
+
+- name: Ensure database exists
+  mysql_db:
+    name: "{{ databases.wordpress.base }}"
+    state: present
+    encoding: utf8
+  
+- name: Ensure database user exists
+  mysql_user: 
+    name: "{{ databases.wordpress.user }}"
+    host: localhost
+    password: "{{ databases.wordpress.passwd }}"
+    priv: '{{ databases.wordpress.base }}.*:ALL'
+    
+- name: Ensure wordpress config link exists
+  file:
+    src: "/etc/wordpress/wp-config.php"
+    dest: "/usr/share/wordpress/wp-config.php"
+    state: link
+
+# Manage wordpress
+- name: Ensure Wordpress is configured
+  lineinfile: 
+    path: /etc/wordpress/wp-config.php
+    regexp: "define.*'{{ item.key }}'"
+    line: "define('{{ item.key }}', '{{ item.value }}' );"
+  with_dict: "{{ wordpress.settings }}"
+    
+- name: Ensure Wordpress some directories are owned by apache
+  file:
+    path: "/usr/share/wordpress/wp-content/{{ item }}"
+    state: directory
+    owner: apache
+    group: ftp
+    mode: 2775
+  with_items:
+    - gallery
+    - uploads
+  
+- name: Ensure wordpress config files have apache group
+  file:
+    dest: "{{ item }}"
+    owner: root
+    group: apache
+    mode: 0640  
+  with_items:      
+  - "/etc/wordpress/wp-config.php"
+  
+- name: Ensure wordpress alias is defined for httpd
+  copy:
+    src: "wordpress.conf"
+    dest: "/etc/httpd/conf.d/wordpress.conf"
+    backup: yes
+  notify:
+  - restart httpd
