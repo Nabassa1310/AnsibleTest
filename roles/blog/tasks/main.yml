@@ -5,8 +5,6 @@
     state: latest
   vars:
     packages: "{{ rpms }}"
-  notify:
-  - restart httpd
 
 - name: Ensure database exists
   mysql_db:
@@ -35,7 +33,7 @@
     line: "define('{{ item.key }}', '{{ item.value }}' );"
   with_dict: "{{ wordpress.settings }}"
     
-- name: Ensure Wordpress some directories are owned by apache
+- name: Ensure some Wordpress directories are owned by apache
   file:
     path: "/usr/share/wordpress/wp-content/{{ item }}"
     state: directory
