@@ -3,7 +3,8 @@
   yum:
     name: '*'
     state: latest
-
+  tags: update
+  
 # Uninstall unwanted packages
 - name: Ensure unwanted packages of services are absent
   yum: 
